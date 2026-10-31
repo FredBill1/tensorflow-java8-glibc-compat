@@ -1,0 +1,10 @@
+.git
+target
+dist
+test-artifacts
+tests/fixtures
+.venv-model
+**/__pycache__
+**/*.pyc
+.idea
+.vscode

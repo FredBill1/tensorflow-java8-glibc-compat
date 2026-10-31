@@ -1,0 +1,12 @@
+diff --git a/org/tensorflow/NativeFunction.java b/org/tensorflow/NativeFunction.java
+--- a/org/tensorflow/NativeFunction.java
++++ b/org/tensorflow/NativeFunction.java
+@@ -90,7 +90,7 @@
+                   }
+                 });
+       }
+-      dependencies = List.copyOf(deps);
++      dependencies = java.util.Collections.unmodifiableList(deps.stream().map(java.util.Objects::requireNonNull).collect(java.util.stream.Collectors.toList()));
+     }
+ 
+     return dependencies;

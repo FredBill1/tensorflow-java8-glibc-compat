@@ -1,0 +1,14 @@
+tensorflow-java8-glibc-compat
+Copyright 2026 tensorflow-java8-glibc-compat contributors
+
+This project includes modified TensorFlow Java sources and rebuilt TensorFlow
+Java JNI bridges. Compatibility modifications target Java 8 and the documented
+Linux ABI baseline. Official TensorFlow C++ runtime libraries are redistributed
+without modification. TensorFlow is developed by the TensorFlow contributors.
+
+The release also includes JavaCPP and protobuf-java. Their original licenses,
+copyright notices, and applicable third-party attributions are retained in the
+artifact and collected release license materials.
+
+This notice is informational and does not modify the licenses of the project or
+its bundled components. The project is not an official TensorFlow distribution.

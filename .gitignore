@@ -1,0 +1,11 @@
+target/
+dist/
+test-artifacts/
+tests/fixtures/
+.venv-model/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.idea/
+.vscode/
+*.log

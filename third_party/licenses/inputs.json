@@ -1,0 +1,16 @@
+[
+  {
+    "artifact": "javacpp",
+    "version": "1.5.12",
+    "path": "javacpp-1.5.12-LICENSE.txt",
+    "url": "https://raw.githubusercontent.com/bytedeco/javacpp/1.5.12/LICENSE.txt",
+    "sha256": "bd5f6b1276fd448f016115dcd4a39ee6f5e3ce32441a0cccdb9e6370e9df5434"
+  },
+  {
+    "artifact": "protobuf-java",
+    "version": "4.31.1",
+    "path": "protobuf-java-4.31.1-LICENSE.txt",
+    "url": "https://raw.githubusercontent.com/protocolbuffers/protobuf/v31.1/LICENSE",
+    "sha256": "6e5e117324afd944dcf67f36cf329843bc1a92229a8cd9bb573d7a83130fea7d"
+  }
+]

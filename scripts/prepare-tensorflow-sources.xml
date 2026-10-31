@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="prepare-tensorflow-sources" default="prepare">
+  <property name="tensorflow.patch.directory" location="${basedir}/patches/tensorflow/${tensorflow.java.version}"/>
+  <property name="tensorflow.prepare.file" location="${basedir}/scripts/prepare-tensorflow-sources.xml"/>
+  <property name="tensorflow.state.file" location="${project.build.directory}/tensorflow-sources.properties"/>
+
+  <target name="validate">
+    <condition property="tensorflow.build.java8"><equals arg1="${ant.java.version}" arg2="1.8"/></condition>
+    <fail unless="tensorflow.build.java8" message="TensorFlow sources must be compiled with JDK 8; use maven:3.9.9-eclipse-temurin-8."/>
+    <checksum file="${tensorflow.source.jars.directory}/core-api-sources.jar" algorithm="SHA-256" property="tensorflow.sources.api.actual"/>
+    <checksum file="${tensorflow.source.jars.directory}/core-native-sources.jar" algorithm="SHA-256" property="tensorflow.sources.native.actual"/>
+    <checksum file="${tensorflow.source.jars.directory}/ndarray-sources.jar" algorithm="SHA-256" property="tensorflow.sources.ndarray.actual"/>
+    <fail message="TensorFlow source SHA-256 mismatch; refusing to patch or compile unverified sources.">
+      <condition><not><and>
+        <equals arg1="${tensorflow.sources.api.actual}" arg2="${tensorflow.sources.api.sha256}" casesensitive="false"/>
+        <equals arg1="${tensorflow.sources.native.actual}" arg2="${tensorflow.sources.native.sha256}" casesensitive="false"/>
+        <equals arg1="${tensorflow.sources.ndarray.actual}" arg2="${tensorflow.sources.ndarray.sha256}" casesensitive="false"/>
+      </and></not></condition>
+    </fail>
+    <resourcecount property="tensorflow.patch.count"><fileset dir="${tensorflow.patch.directory}" includes="*.patch"/></resourcecount>
+    <fail message="TensorFlow Java 8 patches are missing."><condition><equals arg1="${tensorflow.patch.count}" arg2="0"/></condition></fail>
+    <checksum algorithm="SHA-256" totalproperty="tensorflow.patch.actual" verifyproperty="tensorflow.patch.sidecars">
+      <fileset dir="${tensorflow.patch.directory}" includes="*.patch"/>
+    </checksum>
+    <checksum file="${tensorflow.prepare.file}" algorithm="SHA-256" property="tensorflow.prepare.actual"/>
+    <property name="tensorflow.inputs" value="1:${tensorflow.java.version}:${tensorflow.sources.api.actual}:${tensorflow.sources.native.actual}:${tensorflow.sources.ndarray.actual}:${tensorflow.patch.actual}:${tensorflow.prepare.actual}"/>
+  </target>
+
+  <target name="check" depends="validate">
+    <property file="${tensorflow.state.file}" prefix="tensorflow.prepared"/>
+    <!-- verifyproperty forces content reads and suppresses per-file checksum writes.
+         Only totalproperty is used: it includes both the contents and relative paths.
+         The buildfile also keeps the resource collection nonempty if all sources vanish. -->
+    <checksum algorithm="SHA-256" totalproperty="tensorflow.sources.current.sha256" verifyproperty="tensorflow.sources.current.sidecars">
+      <fileset dir="${tensorflow.sources.directory}" erroronmissingdir="false" defaultexcludes="false"><include name="**/*"/></fileset>
+      <filelist dir="${basedir}" files="scripts/prepare-tensorflow-sources.xml"/>
+    </checksum>
+    <condition property="tensorflow.sources.current"><and>
+      <isset property="tensorflow.prepared.inputs"/>
+      <isset property="tensorflow.prepared.outputs"/>
+      <equals arg1="${tensorflow.inputs}" arg2="${tensorflow.prepared.inputs}"/>
+      <equals arg1="${tensorflow.sources.current.sha256}" arg2="${tensorflow.prepared.outputs}"/>
+    </and></condition>
+  </target>
+
+  <target name="reuse" depends="check" if="tensorflow.sources.current">
+    <echo message="TensorFlow sources unchanged; reusing verified patched sources."/>
+  </target>
+
+  <target name="rebuild" depends="check" unless="tensorflow.sources.current">
+    <echo message="TensorFlow source inputs or contents changed; rebuilding patched sources and invalidating compiled output."/>
+    <delete file="${tensorflow.state.file}"/>
+    <delete file="${tensorflow.state.file}.tmp"/>
+    <delete dir="${tensorflow.sources.directory}"/>
+    <!-- Removed upstream classes must not survive a version change or a repaired tree. -->
+    <delete dir="${project.build.outputDirectory}"/>
+    <delete dir="${project.build.testOutputDirectory}"/>
+    <delete dir="${project.build.directory}/analysis"/>
+    <delete dir="${project.build.directory}/maven-status/maven-compiler-plugin"/>
+    <mkdir dir="${tensorflow.sources.directory}"/>
+    <unzip src="${tensorflow.source.jars.directory}/core-api-sources.jar" dest="${tensorflow.sources.directory}"><patternset><include name="org/**/*.java"/></patternset></unzip>
+    <unzip src="${tensorflow.source.jars.directory}/core-native-sources.jar" dest="${tensorflow.sources.directory}"><patternset><include name="org/**/*.java"/></patternset></unzip>
+    <unzip src="${tensorflow.source.jars.directory}/ndarray-sources.jar" dest="${tensorflow.sources.directory}"><patternset><include name="org/**/*.java"/></patternset></unzip>
+    <!-- Ceiling avoids discovering the parent repository and silently skipping paths. -->
+    <apply executable="git" dir="${tensorflow.sources.directory}" failonerror="true" failifexecutionfails="true" parallel="true">
+      <env key="GIT_CEILING_DIRECTORIES" value="${project.build.directory}"/>
+      <arg value="apply"/><arg value="--whitespace=nowarn"/><srcfile/>
+      <fileset dir="${tensorflow.patch.directory}" includes="*.patch"/>
+    </apply>
+    <checksum algorithm="SHA-256" totalproperty="tensorflow.sources.prepared.sha256" verifyproperty="tensorflow.sources.prepared.sidecars">
+      <fileset dir="${tensorflow.sources.directory}" defaultexcludes="false"><include name="**/*"/></fileset>
+      <filelist dir="${basedir}" files="scripts/prepare-tensorflow-sources.xml"/>
+    </checksum>
+    <!-- Publish state only after extraction, patching, and fingerprinting all succeed. -->
+    <echo file="${tensorflow.state.file}.tmp" encoding="UTF-8">inputs=${tensorflow.inputs}
+outputs=${tensorflow.sources.prepared.sha256}
+</echo>
+    <move file="${tensorflow.state.file}.tmp" tofile="${tensorflow.state.file}"/>
+  </target>
+
+  <target name="prepare" depends="reuse,rebuild"/>
+</project>

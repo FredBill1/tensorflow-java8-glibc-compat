@@ -1,0 +1,84 @@
+diff --git a/org/tensorflow/AbstractGradientAdapter.java b/org/tensorflow/AbstractGradientAdapter.java
+--- a/org/tensorflow/AbstractGradientAdapter.java
++++ b/org/tensorflow/AbstractGradientAdapter.java
+@@ -46,9 +46,9 @@
+       int nativeGradInputsLength,
+       PointerPointer nativeGradOutputsPtr) {
+     try (PointerScope callScope = new PointerScope()) {
+-      var graph = Graph.findGraph(nativeGraphId);
+-      var operation = new GraphOperation(graph, nativeOperation);
+-      var gradInputs = fromNativeOutputs(graph, nativeGradInputs, nativeGradInputsLength);
++      Graph graph = Graph.findGraph(nativeGraphId);
++      GraphOperation operation = new GraphOperation(graph, nativeOperation);
++      List<Output<?>> gradInputs = fromNativeOutputs(graph, nativeGradInputs, nativeGradInputsLength);
+ 
+       // The graph locks are not re-entrant, so attempting to add an op to a graph that has been
+       // locked by the gradient builder will fail without this.
+@@ -72,7 +72,7 @@
+   private static List<Output<?>> fromNativeOutputs(Graph g, TF_Output nativeOutputs, int length) {
+     List<Output<?>> outputs = new ArrayList<>(length);
+     for (int i = 0; i < length; ++i) {
+-      var nativeOutput = nativeOutputs.position(i);
++      TF_Output nativeOutput = nativeOutputs.position(i);
+       outputs.add(
+           i, new Output<>(new GraphOperation(g, nativeOutput.oper()), nativeOutput.index()));
+     }
+@@ -88,12 +88,12 @@
+   private static TF_Output toNativeOutputs(List<Operand<?>> outputs) {
+     // Use malloc to allocate native outputs, as they will be freed by the native layer and we do
+     // not want JavaCPP to deallocate them
+-    var nativeOutputs =
++    TF_Output nativeOutputs =
+         new TF_Output(Pointer.malloc((long) outputs.size() * Pointer.sizeof(TF_Output.class)));
+ 
+     for (int i = 0; i < outputs.size(); ++i) {
+       Operand<?> operand = outputs.get(i);
+-      var nativeOutput = nativeOutputs.getPointer(i);
++      TF_Output nativeOutput = nativeOutputs.getPointer(i);
+ 
+       // Convention: null Operand => NoGradient
+       if (operand == null) {
+@@ -102,7 +102,7 @@
+         continue;
+       }
+ 
+-      var output = operand.asOutput();
++      Output<?> output = operand.asOutput();
+       nativeOutput.oper(((GraphOperation) output.op()).getUnsafeNativeHandle());
+       nativeOutput.index(output.index());
+     }
+diff --git a/org/tensorflow/Graph.java b/org/tensorflow/Graph.java
+--- a/org/tensorflow/Graph.java
++++ b/org/tensorflow/Graph.java
+@@ -1117,8 +1117,8 @@
+     if (newInitializersMarker < 0) {
+       return graphDef;
+     }
+-    var graphDefWithInitBuilder = graphDef.toBuilder();
+-    var initNode =
++    GraphDef.Builder graphDefWithInitBuilder = graphDef.toBuilder();
++    org.tensorflow.proto.NodeDef.Builder initNode =
+         graphDefWithInitBuilder.getNodeBuilderList().stream()
+             .filter(n -> n.getName().equals(INIT_OP_NAME))
+             .findFirst()
+@@ -1374,7 +1374,7 @@
+    * @throws NoSuchElementException if graph is not found
+    */
+   public static Graph findGraph(TFJ_GraphId graphId) {
+-    var graph = ALL_GRAPHS.get(graphId);
++    Graph graph = ALL_GRAPHS.get(graphId);
+     if (graph == null || graph.nativeHandle == null) {
+       throw new NoSuchElementException("Graph not found");
+     }
+diff --git a/org/tensorflow/internal/c_api/TFJ_RuntimeLibrary.java b/org/tensorflow/internal/c_api/TFJ_RuntimeLibrary.java
+--- a/org/tensorflow/internal/c_api/TFJ_RuntimeLibrary.java
++++ b/org/tensorflow/internal/c_api/TFJ_RuntimeLibrary.java
+@@ -120,7 +120,7 @@
+   }
+ 
+   private static boolean isLoaded() {
+-    try (var version = tensorflow.TF_Version()) {
++    try (org.bytedeco.javacpp.BytePointer version = tensorflow.TF_Version()) {
+       log("Version loaded: " + version.toString());
+       return true;
+     } catch (UnsatisfiedLinkError e) {

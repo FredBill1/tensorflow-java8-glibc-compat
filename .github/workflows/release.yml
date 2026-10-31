@@ -1,0 +1,94 @@
+name: Build release assets
+
+on:
+  release:
+    types: [published]
+
+concurrency:
+  group: release-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    env:
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out the published release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check release state and matched artifact versions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p test-artifacts/release
+          python scripts/publish_release.py preflight --repo "$GH_REPO" --tag "$RELEASE_TAG" 2>&1 | tee test-artifacts/release/preflight.log
+      - name: Standard-library unit tests
+        run: python -m unittest discover -s tests -p 'test_*.py' 2>&1 | tee test-artifacts/release/python.log
+      - name: Enable ARM64 execution
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+          image: tonistiigi/binfmt@sha256:465d3fdd28d0f2b871ba4b4ec98bd183292e96167f00d9fd40bd249f8632d705
+      - name: Build the pinned Java 8 native build image
+        run: docker build --platform linux/amd64 -f docker/native-build.Dockerfile -t tensorflow-java8-glibc-compat-build:java8-gcc10 . 2>&1 | tee test-artifacts/release/build-image.log
+      - name: Real Java 8 source-preparation regression
+        run: python tests/run_build_preparation.py 2>&1 | tee test-artifacts/release/source-preparation.log
+      - name: Build and verify the compatibility artifact
+        run: python scripts/build.py clean verify 2>&1 | tee test-artifacts/release/build.log
+      - name: Release temporary hosted-runner build storage
+        run: |
+          if [[ "$RUNNER_ENVIRONMENT" != "github-hosted" ]]; then
+            echo "Build-cache cleanup is restricted to this disposable GitHub-hosted runner." >&2
+            exit 1
+          fi
+          build_volume="$(python -c 'import sys; from pathlib import Path; sys.path.insert(0, "scripts"); import build; print(build.build_names(Path.cwd())[1])')"
+          if [[ ! "$build_volume" =~ ^tensorflow-compat-target-[0-9a-f]{16}$ ]]; then
+            echo "Unexpected build volume name." >&2
+            exit 1
+          fi
+          docker volume rm "$build_volume" tensorflow-compat-maven
+          docker builder prune --all --force
+          df -h .
+      - name: Export independent SavedModel fixtures
+        run: |
+          python -m venv .venv-model
+          .venv-model/bin/python -m pip install --no-cache-dir --require-hashes -r tests/model-requirements.lock 2>&1 | tee test-artifacts/release/fixture-dependencies.log
+          .venv-model/bin/python tests/export_models.py 2>&1 | tee test-artifacts/release/fixtures.log
+      - name: Execute Java 8 on both CPUs and both runtime baselines
+        run: python tests/run_native_compat.py 2>&1 | tee test-artifacts/release/native.log
+      - name: Prepare and verify release files
+        run: |
+          python scripts/release.py 2>&1 | tee test-artifacts/release/package.log
+          (cd dist && sha256sum -c SHA256SUMS) 2>&1 | tee test-artifacts/release/checksums.log
+      - name: Upload missing release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/publish_release.py upload --repo "$GH_REPO" --tag "$RELEASE_TAG" --dist dist 2>&1 | tee test-artifacts/release/upload.log
+      - name: Retain failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: ignore
+          include-hidden-files: false
+          path: |
+            test-artifacts/release/*.log
+            test-artifacts/native-compat/*.log
+            test-artifacts/native-compat/summary.json
+            target/build.log
+            target/surefire-reports/
+            target/tensorflow-native/*/build.log

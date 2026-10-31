@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "tensorflow_java": "1.2.0",
+  "tensorflow_runtime": "2.21.0",
+  "javacpp": "1.5.12",
+  "protobuf": "4.31.1",
+  "upstream_commit": "62a6c6c042409611443ea464a2472a464f199501",
+  "native_sources": {
+    "tfj_graph.h": {
+      "url": "https://raw.githubusercontent.com/tensorflow/java/62a6c6c042409611443ea464a2472a464f199501/tensorflow-core/tensorflow-core-native/src/main/native/org/tensorflow/internal/c_api/tfj_graph.h",
+      "sha256": "3bf92a0b5a29f2591ff32dc32e2f662ab8ede018365160c548d73e3f1657ae85"
+    },
+    "tfj_graph_impl.cc": {
+      "url": "https://raw.githubusercontent.com/tensorflow/java/62a6c6c042409611443ea464a2472a464f199501/tensorflow-core/tensorflow-core-native/src/main/native/org/tensorflow/internal/c_api/tfj_graph_impl.cc",
+      "sha256": "bc9999f07c0ef71ea66dc7a387fe4ea9e3710ee5226602dd214c7a50d3a1fe48"
+    },
+    "tfj_scope.h": {
+      "url": "https://raw.githubusercontent.com/tensorflow/java/62a6c6c042409611443ea464a2472a464f199501/tensorflow-core/tensorflow-core-native/src/main/native/org/tensorflow/internal/c_api/tfj_scope.h",
+      "sha256": "2afc9dcc8e80f4c405d5f4dd4c3bca8c10da8747472768ab6cee7876879a88f0"
+    },
+    "tfj_scope_impl.cc": {
+      "url": "https://raw.githubusercontent.com/tensorflow/java/62a6c6c042409611443ea464a2472a464f199501/tensorflow-core/tensorflow-core-native/src/main/native/org/tensorflow/internal/c_api/tfj_scope_impl.cc",
+      "sha256": "489075cf2fb648528cdea49e96a1ef290141374e83fc41d2707341e3d1dde0ff"
+    },
+    "tfj_gradients.h": {
+      "url": "https://raw.githubusercontent.com/tensorflow/java/62a6c6c042409611443ea464a2472a464f199501/tensorflow-core/tensorflow-core-native/src/main/native/org/tensorflow/internal/c_api/tfj_gradients.h",
+      "sha256": "2c151b88d1bda927ad4dea7e4bcd47de8cb73bb7e6bc69fafbcd0bb7911abb3a"
+    },
+    "tfj_gradients_impl.cc": {
+      "url": "https://raw.githubusercontent.com/tensorflow/java/62a6c6c042409611443ea464a2472a464f199501/tensorflow-core/tensorflow-core-native/src/main/native/org/tensorflow/internal/c_api/tfj_gradients_impl.cc",
+      "sha256": "a9976a40200d71c891f568a81800aae7c7c4ffd89b842ecbe1b1604ccceafd1f"
+    },
+    "tfe_serverdef_stub.h": {
+      "url": "https://raw.githubusercontent.com/tensorflow/java/62a6c6c042409611443ea464a2472a464f199501/tensorflow-core/tensorflow-core-native/src/main/native/org/tensorflow/internal/c_api/tfe_serverdef_stub.h",
+      "sha256": "aca2d3bedafd1a85f57654d217fedb28e86886c94ba58687662a8c437281c9df"
+    },
+    "tfe_serverdef_stub.cc": {
+      "url": "https://raw.githubusercontent.com/tensorflow/java/62a6c6c042409611443ea464a2472a464f199501/tensorflow-core/tensorflow-core-native/src/main/native/org/tensorflow/internal/c_api/tfe_serverdef_stub.cc",
+      "sha256": "8d13b7f1574e0e822f97eaf2ac660172ea784ca8c15c283c3a933d9e5b5972f8"
+    }
+  },
+  "platforms": {
+    "linux-x86_64": {
+      "headers": {
+        "url": "https://files.pythonhosted.org/packages/ac/21/48cd18bfd214042ecb7392e01e016d3dd60b4f1ef13f10954ab472cd3c13/tensorflow_cpu-2.21.0-cp313-cp313-manylinux_2_27_x86_64.whl",
+        "sha256": "05af7c26d35f4de910b5598c7b507e3981831a7b0f47fed9a405d995d51d7793"
+      },
+      "classifier": {
+        "url": "https://repo.maven.apache.org/maven2/org/tensorflow/tensorflow-core-native/1.2.0/tensorflow-core-native-1.2.0-linux-x86_64.jar",
+        "sha256": "e6fc5afb04092f3427408f1947ec1e5832ed196009acfc088b4d38a516b708bd"
+      }
+    },
+    "linux-arm64": {
+      "headers": {
+        "url": "https://files.pythonhosted.org/packages/72/72/343b86b4c9bfe28e81f749439f908c1e26aeac73d9f12b8dcdb996eb8ecb/tensorflow-2.21.0-cp313-cp313-manylinux_2_27_aarch64.whl",
+        "sha256": "a10abdfb8b1189210c251021a3f153b7ccc52a8e6521351f3dc3331e8ba593e0"
+      },
+      "classifier": {
+        "url": "https://repo.maven.apache.org/maven2/org/tensorflow/tensorflow-core-native/1.2.0/tensorflow-core-native-1.2.0-linux-arm64.jar",
+        "sha256": "5f35ca75d4d735fc3e66af29d4e2a4191fbc98d0a2f7411e70b3174a20ba3d49"
+      }
+    }
+  }
+}
